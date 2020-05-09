@@ -1,3 +1,4 @@
+//test
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
 ESP8266WiFiMulti WiFiMulti;
@@ -66,11 +67,10 @@ String EEPROM_Save() {
   Serial.println((ok) ? "Commit OK" : "Commit Failed");
   return (ok) ? "Commit OK" : "Commit Failed";
 }
-
 const byte DNS_PORT = 53;
 DNSServer dnsServer;
 
-const char * last_update = "11/07/2019";
+const char * last_update = "5/9/2020";
 ESP8266WebServer server(80);
 
 int x, d, z, h, m, l;
@@ -698,7 +698,7 @@ void setup() {
   server.on("/quick", [] () {
     if (server.arg("stop") == "true") {
       t_running = now();
-      server.send(200,"text/html","Quick Run Stopped")
+      server.send(200,"text/html","Quick Run Stopped");
       delay(500);
     }
     else {

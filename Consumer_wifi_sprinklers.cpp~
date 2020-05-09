@@ -1,4 +1,3 @@
-//test
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
 ESP8266WiFiMulti WiFiMulti;
@@ -54,7 +53,7 @@ void fullReset() {
   }
   data.pagePassword[0] = char(0);
   data.passwordTimeout = 60;
-  data.timezone = 0;
+  data.timezone=0;
   EEPROM_Save();
   delay(2000);
   ESP.reset();
@@ -67,6 +66,7 @@ String EEPROM_Save() {
   Serial.println((ok) ? "Commit OK" : "Commit Failed");
   return (ok) ? "Commit OK" : "Commit Failed";
 }
+
 const byte DNS_PORT = 53;
 DNSServer dnsServer;
 
@@ -698,13 +698,13 @@ void setup() {
   server.on("/quick", [] () {
     if (server.arg("stop") == "true") {
       t_running = now();
-      server.send(200, "text/html", "Quick Run Stopped");
+      server.send(200,"text/html","Quick Run Stopped");
       delay(500);
     }
     else {
       Serial.println("Quick run " + server.arg("zone") + " " + server.arg("length"));
       timer(pins[server.arg("zone").toInt()], server.arg("length").toInt());
-      server.send(200, "text/html", "Starting Zone " + server.arg("zone") + " for " + server.arg("length") + "  Minutes");
+      server.send(200,"text/html","Starting Zone "+server.arg("zone")+" for "+server.arg("length")+"  Minutes");
     }
     server.send(200, "text/html", Main_Page());
     delay(1000);

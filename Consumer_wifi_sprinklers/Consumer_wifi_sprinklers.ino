@@ -370,6 +370,11 @@ char * Quick_Run() {
           else if (n == 1) {
             xhr.send(sub + '&length='+document.getElementById('quickrun').value+'&stop=false')
           }
+	      xtp.onreadystatechange = function() {
+	  		if (this.readyState == 4 && this.status == 200) {
+				alert(xtp.responseText);
+			}
+    	  }; 
         }
     </script>)page";
   return page;
@@ -693,10 +698,13 @@ void setup() {
   server.on("/quick", [] () {
     if (server.arg("stop") == "true") {
       t_running = now();
+      server.send(200,"text/html","Quick Run Stopped")
+      delay(500);
     }
     else {
       Serial.println("Quick run " + server.arg("zone") + " " + server.arg("length"));
       timer(pins[server.arg("zone").toInt()], server.arg("length").toInt());
+      server.send(200,"text/html","Starting Zone "+server.arg("zone")+" for "+server.arg("length")+"  Minutes");
     }
     server.send(200, "text/html", Main_Page());
     delay(1000);

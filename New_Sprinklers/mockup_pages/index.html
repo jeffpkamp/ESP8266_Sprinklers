@@ -1,0 +1,247 @@
+<style>
+*{
+	font-size:25pt
+}
+td{
+	text-align:center;
+}
+input[type=checkbox]{
+	transform:scale(1.5);
+}
+#myFilter{
+	position: absolute;
+    background: rgb(235, 235, 235);
+    top: 18px;
+    padding: 5px;
+    left: 472px;
+    border-style: outset;
+    box-shadow: 2px 2px 10px;
+}
+.remButton{
+	background:none;
+	color:blue;
+	border:none;
+	cursor:pointer;
+}
+Button{
+	border-radius: 10px;
+    border: solid black 3px;
+    font-weight: bolder;
+    font-size: 120%;
+	margin-left:20px;
+}
+.header{
+	border-right:none;
+	border-left:none;
+	border-radius:10px;
+	background:linear-gradient(180deg,transparent 10%,rgb(70,100,200) 100%);
+}
+th{
+	background:rgba(240,240,240,1);
+	border-left:inset 2px;
+	border-right:inset 2px;
+	cursor:pointer;
+}
+#quickrun{
+	position:fixed;
+	top:20%;
+	bottom:50%;
+	left:25%;
+	right:25%;
+	margin:auto;
+	background:rgb(250,250,250);
+	border:solid black 2px;
+	border-radius:10px;
+}
+</style>
+<html>
+<div id=quickrun style=display:none;text-align:center;>
+	<h1> Quick Run </h1>
+	Zone:<select id=qrZone>
+	</select>
+	Runtime:<input type=number id=qrTime min=0 max=120 style=width:4p></input><br>
+	<button onclick=qr(qrZone.value,qrTime.value)>Set</button><button onclick=quickrun.style.display="none">Cancel</button>
+</div>
+<div id=info style="text-align:center">
+	<h1>My Sprinkler Page</h1><br>
+	<table style="margin:auto"><tbody>
+		<tr><td>Current Time:</td><td id=time></td></tr>
+		<tr><td>Active Zones:</td><td id=activeZone></td></tr>
+		<tr><td></td><td></td></tr>
+		<tr><td><button onclick=quickrun.style.display="">QuickRun</button></td><td><button onclick=location="schedulesetup.html">Set Schedule</button></td></tr>
+</tbody></table>
+</div>
+
+<div id=schedule>	
+	<table style=margin:auto;width:90%;border-collapse:collapse;font-size:25pt;><tbody id=setTimes>
+		<tr><th colspan=3 style="border-bottom:solid black 3px">Schedule</th></tr>
+		<tr id=header style="border-bottom:solid black 3px">
+			<th id=z>Zone</th><th  id=t>Time</th><th id=r>Run Time</th>
+		</tr>
+	</tbody></table>
+</div>
+
+
+
+</html>
+
+
+<script>
+zones=[0,1,2,3,4,5,6,7]
+days="Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday".split(",");
+for (x in zones){qrZone.insertAdjacentHTML("beforeend","<option value="+x+">"+x+"</option>")}
+schedule=[]
+quickRun=[0,0]
+
+//schedule format is [zone,day,hour,minute,runtime]
+
+clock=new Date;
+update();
+
+function qr(zone,time){
+	var now=Number((clock.getHours()*60)+clock.getMinutes());
+	quickRun=[zone,now+Number(time)];
+	console.log(now,time);
+	quickrun.style.display="none";
+}
+
+function update(){
+	clock=new Date;
+	var now=(clock.getHours()*60)+(clock.getMinutes())
+	time.innerText=clock.toLocaleTimeString();
+	az=[]
+	activeZone.innerText=az;
+	(quickRun[1]>now)?az.push(quickRun[0]):quickRun[1]=0;
+	for (x in schedule){
+		if (schedule[x][0] > -1 && schedule[x][1]==clock.getDay()){
+			start=(Number(schedule[x][2])*60)+Number(schedule[x][3])
+			if(now > start && now < start+Number(schedule[x][4])){
+				az.push(schedule[x][0]);
+			}
+		}
+		az=Array.from(new Set(az));
+		activeZone.innerText=az;
+	}
+	setTimeout(update,1000);
+}	
+
+function hideRows(cl,visible){
+	if (visible=="true"){
+		qs("."+cl).forEach(ele=>ele.style.display="none");
+		document.getElementById(cl).dataset.vis="false";
+	}else{
+		qs("."+cl).forEach(ele=>ele.style.display="");
+		document.getElementById(cl).dataset.vis="true";
+	}
+}
+
+
+function setup(){
+	for (var x=days.length-1;x>-1;x--){
+		var code='<tr><th colspan=4 onclick=hideRows(this.id,this.dataset.vis) data-vis=false class="header" id="'+days[x]+'">'+days[x]+'</th></tr>';
+	header.insertAdjacentHTML("afterend",code);
+	}
+	if (Object.keys(window.localStorage).indexOf("schedule") > -1){
+		schedule=JSON.parse(window.localStorage.schedule);	
+		for(x=0;x<160;x++){
+			if (schedule[x][0] > -1){
+				var ampm=(schedule[x][2]>12)?"PM":"AM";
+				var hour=(schedule[x][2]==0 || schedule[x][2]==12)?12:schedule[x][2]%12
+				code='<tr style=display:none class="'+days[schedule[x][1]]+'"><td>'+schedule[x][0]+'</td><td data-value='+(Number((schedule[x][2]*60))+Number(schedule[x][3]))+'>'+hour+':'+String(schedule[x][3]).padStart(2,'0')+" "+ampm+'</td><td>'+schedule[x][4]+'</td></tr>';
+				document.getElementById(days[schedule[x][1]]).parentElement.insertAdjacentHTML("afterend",code);
+				//addSP(...schedule[x],x,setup=true);
+			}
+		}
+		for (x in days){
+				tsort(t,false,qs("."+days[x]).map(row=>row.cells[1]));
+		}
+		//tsort(t,false,qs(".Sunday").map(row=>row.cells[1]));
+	}else{
+		for (x=0;x<160;x++){
+			schedule[x]=[-1,0,0,0,0];
+		}
+	}
+}
+
+setup();
+
+function IN(val,arr){
+	if (Array.from(arr).indexOf(val) > -1){
+			return true;
+	}else{
+			return false;
+	}
+}
+
+function makeFilter(ele,event){
+	event.preventDefault();
+	tsort(ele);
+	var values=getCol(ele.cellIndex,1).map(ele=>ele.dataset.value).filter((v,i,a)=>a.indexOf(v)===i);
+	var labels=getCol(ele.cellIndex,1).map(ele=>ele.innerText).filter((v,i,a)=>a.indexOf(v)===i);
+	var data="Select Values<br>";
+	for (x in values){
+		data+='<input class=filterItem type=checkbox checked value='+values[x]+'>'+labels[x]+'<br>';
+	}
+	data+='<button onclick=\'filterRows('+ele.cellIndex+',qs(".filterItem").filter(ele=>{if(ele.checked)return ele.value}).map(ele=>Number(ele.value)));myFilter.style.display="none"\'>Filter</button>'
+	myFilter.innerHTML=data;
+	myFilter.style.top=event.pageY;
+	myFilter.style.left=event.pageX
+	myFilter.style.display="";
+
+}
+
+function filterRows(col,values,table=setTimes){
+	Array.from(table.rows).forEach(ele=>ele.style.display="");
+	var cols=getCol(col,1);
+	var failures=cols.map((col)=>{if(!(IN(Number(col.dataset.value),values)))return col.parentElement}).filter(ele => ele != undefined);
+	failures.forEach(ele=>ele.style.display="none");
+}
+
+function getCol(col,firstrow=0,lastrow=false,table=setTimes){
+	if (!lastrow){lastrow=table.rows[0].length}
+	return columns=Array.from(table.rows).map((row)=>row.cells[col]).slice(firstrow,lastrow)
+}
+
+
+function tsort(ele,ps=false,set=false){
+	if (ps){
+		for (x in ps){
+			tsort(ps[x]);
+		}
+	};
+	if (set){
+		set=set.map(ele=>{return [Number(ele.dataset.value),ele.parentElement]}).sort(
+			function(first,second){return first[0]-second[0]});
+	}else{
+		var set=getCol(ele.cellIndex,1).map(
+			(ele)=>{return [Number(ele.dataset.value),ele.parentElement]}).sort(
+				function(first,second){return first[0]-second[0]});
+	}
+	start=Math.min(...set.map(ele=>ele[1].rowIndex))
+	for (var x in set){
+		x=Number(x);
+	//for (var x=Math.min(...set.map(ele=>ele[1].rowIndex));x<Math.min(...set.map(ele=>ele[1].rowIndex));x++){\
+		setTimes.insertBefore(set[x][1],setTimes.rows[start+x]);
+	}
+}
+
+function remove(ele,index){
+	ele.parentElement.parentElement.remove();
+	schedule[Number(index)]=[-1,0,0,0,0];
+	window.localStorage.setItem("schedule",JSON.stringify(schedule))
+}
+
+
+function qs(...args){
+    var arr=[];
+    for (var x=0;x<args.length;x++){
+        arr=[...arr,...document.querySelectorAll(args[x])];
+    }
+    return arr;
+}
+
+
+
+
+</script>
+

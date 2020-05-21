@@ -1,0 +1,235 @@
+<style>
+*{
+	font-size:25pt
+}
+td{
+	text-align:center;
+}
+input[type=checkbox]{
+	transform:scale(1.5);
+}
+#myFilter{
+	position: absolute;
+    background: rgb(235, 235, 235);
+    top: 18px;
+    padding: 5px;
+    left: 472px;
+    border-style: outset;
+    box-shadow: 2px 2px 10px;
+}
+.remButton{
+	background:none;
+	color:blue;
+	border:none;
+	cursor:pointer;
+}
+.comButton{
+	border-radius: 10px;
+    border: solid black 3px;
+    font-weight: bolder;
+/
+font-size: 120%;
+	margin-left:20px;
+}
+th{
+	background:rgba(240,240,240,1);
+	border-left:inset 2px;
+	border-right:inset 2px;
+	cursor:pointer;
+}
+</style>
+<html>
+Click headers to sort<br>
+Right click to filter zone or day
+<div style=display:none; id=myFilter></div>
+<div>
+		<button onclick=location="index.html">Home</button>
+<div>
+		<table style=margin:auto;width:90%;border-collapse:collapse;font-size:25pt;><tbody id=setTimes>
+				<tr id=header style="border-bottom:solid black 3px">
+					<th id=z onclick=tsort(this,[z,t,d])>Zone</th><th id=d onclick=tsort(this,[d,z,t]) >Day</th><th  id=t onclick=tsort(this,[t,z,d]) >Time</th><th id=r onclick=tsort(this,[d,t,z])>Run Time</th><th>Action</th>
+				</tr>
+		</tbody></table>
+</div>
+<div style="text-align:center;margin-top:10px;" id=SPs>
+		<button style="border-radius:10px;border:solid black 3px;font-weight:bolder;font-size:120%;" onclick=setSP()>Add Time</button>
+</div>
+
+
+</html>
+
+
+<script>
+zones=[0,1,2,3,4,5,6,7]
+days="Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday".split(",");
+
+schedule=[]
+//schedule format is [zone,day,hour,minute,runtime]
+
+function setup(){
+	if (Object.keys(window.localStorage).indexOf("schedule") > -1){
+		schedule=JSON.parse(window.localStorage.schedule);	
+		for(x=0;x<160;x++){
+			if (schedule[x][0] > -1){
+					addSP(...schedule[x],x,setup=true);
+			}
+		}
+	}else{
+		for (x=0;x<160;x++){
+			schedule[x]=[-1,0,0,0,0];
+		}
+	}
+}
+
+setup();
+
+function IN(val,arr){
+	if (Array.from(arr).indexOf(val) > -1){
+			return true;
+	}else{
+			return false;
+	}
+}
+
+function makeFilter(ele,event){
+	event.preventDefault();
+	tsort(ele);
+	var values=getCol(ele.cellIndex,1).map(ele=>ele.dataset.value).filter((v,i,a)=>a.indexOf(v)===i);
+	var labels=getCol(ele.cellIndex,1).map(ele=>ele.innerText).filter((v,i,a)=>a.indexOf(v)===i);
+	var data="Select Values<br>";
+	for (x in values){
+		data+='<input class=filterItem type=checkbox checked value='+values[x]+'>'+labels[x]+'<br>';
+	}
+	data+='<button onclick=\'filterRows('+ele.cellIndex+',qs(".filterItem").filter(ele=>{if(ele.checked)return ele.value}).map(ele=>Number(ele.value)));myFilter.style.display="none"\'>Filter</button>'
+	myFilter.innerHTML=data;
+	myFilter.style.top=event.pageY;
+	myFilter.style.left=event.pageX
+	myFilter.style.display="";
+
+}
+
+function filterRows(col,values,table=setTimes){
+	console.log(arguments);
+	Array.from(table.rows).forEach(ele=>ele.style.display="");
+	var cols=getCol(col,1);
+	var failures=cols.map((col)=>{if(!(IN(Number(col.dataset.value),values)))return col.parentElement}).filter(ele => ele != undefined);
+	failures.forEach(ele=>ele.style.display="none");
+	console.log(failures);
+}
+
+function getCol(col,firstrow=0,lastrow=false,table=setTimes){
+	if (!lastrow){lastrow=table.rows[0].length}
+	return columns=Array.from(table.rows).map((row)=>row.cells[col]).slice(firstrow,lastrow)
+}
+
+function tsort(ele,ps=false){
+	if (ps){
+		for (x in ps){
+			tsort(ps[x]);
+		}
+	};
+	var set=getCol(ele.cellIndex,1).map(
+			(ele)=>{return [Number(ele.dataset.value),ele.parentElement]}).sort(
+				function(first,second){return first[0]-second[0]});
+	for (var x=0;x<set.length;x++){
+		setTimes.rows[x+1].parentNode.insertBefore(set[x][1],setTimes.rows[x+1]);
+	}
+}
+
+function setSP(){
+		s="<div style=white-space:pre-line>Zone<select class=zone>";
+		for (var x=0;x<8;x++){s+="<option value="+x+">"+x+"</option>"};
+		s+="</select>\nDay<select>\
+				<option value=0>Sunday</option>\
+				<option value=1>Monday</option>\
+				<option value=2>Tuesday</option>\
+				<option value=3>Wednesday</option>\
+				<option value=4>Thursday</option>\
+				<option value=5>Friday</option>\
+				<option value=6>Saturday</option>\
+			</select>\
+			\nTime<input type=time>\
+			\nRun Time<input type=number max=360 min=0>\
+			\n<button class=comButton onclick=addSP(...Array.from(this.parentElement.children))>Save</button><button onclick=this.parentElement.remove() class=comButton>Cancel</button></div>";
+		SPs.innerHTML+=s;
+}
+
+function addSP(){
+	if (arguments[6]===true){
+		zone=arguments[0];
+		day=arguments[1];
+		hour=arguments[2];
+		minute=arguments[3];
+		time=(hour*60)+minute;
+		length=arguments[4];
+		arrSpot=arguments[5];
+		if(length==0 || time==0){
+			schedule[arguments[5]]=[-1,0,0,0,0];
+			return;
+		}
+		setTimes.innerHTML+="<tr id="+arrSpot+"><td data-value="+zone+">"+zone+"</td><td data-value="+day+">"+days[day]+"</td><td data-value="+time+">"+hour+":"+String(minute).padStart(2,"0")+"</td><td data-value="+length+">"+length+"</td><td><button class=remButton onclick=remove(this,"+arrSpot+")>Remove</button></td></tr>";
+	}else{
+		eles=arguments;
+		zone=eles[0].value;
+		day=eles[1].value;
+		time=eles[2].value.split(":");
+		hour=time[0];
+		minute=time[1];
+		time=Number(time[0]*60)+Number(time[1]);
+		length=eles[3].value;
+		if (time==NaN || length==""){
+			eles[0].parentElement.remove();
+			return;
+		}
+		var arrSpot=vacancy_check(true);
+		if (arrSpot==-1){
+			alert("Too many actions scheduled!\nDelete a schedule point to free up memory!")
+		}else{
+			schedule[arrSpot]=[Number(zone),Number(day),Number(hour),Number(minute),Number(length)];
+			setTimes.innerHTML+="<tr id="+arrSpot+"><td data-value="+zone+">"+zone+"</td><td data-value="+day+">"+days[day]+"</td><td data-value="+time+">"+hour+":"+String(minute).padStart(2,"0")+"</td><td data-value="+length+">"+length+"</td><td><button class=remButton onclick=remove(this,"+arrSpot+")>Remove</button></td></tr>";
+			eles[0].parentElement.remove();
+		}
+		window.localStorage.setItem("schedule",JSON.stringify(schedule))
+	}
+}
+
+function remove(ele,index){
+	ele.parentElement.parentElement.remove();
+	schedule[Number(index)]=[-1,0,0,0,0];
+	window.localStorage.setItem("schedule",JSON.stringify(schedule))
+}
+
+function vacancy_check(fo=false){
+	var n=0;
+	var vac=[]
+	for (var x=0;x<150;x++){
+		if (schedule[x][0]==-1){
+			if (fo) return x;
+			vac[n]=x
+			n+=1;
+		}
+	}
+	if (fo) return -1
+	return {"num":n,"pos":vac}
+}
+
+
+function qs(...args){
+    var arr=[];
+    for (var x=0;x<args.length;x++){
+        arr=[...arr,...document.querySelectorAll(args[x])];
+    }
+    if (arr.length==1){
+        return arr[0];
+    }else{
+        return arr;
+    }
+}
+
+
+
+qs("#z,#d").forEach(ele=>ele.oncontextmenu=function(){makeFilter(ele,event)});
+tsort(d,[d,z,t]);
+document.onclick=function(event){if(!(IN(myFilter,event.path)))myFilter.style.display="none"};
+</script>
+

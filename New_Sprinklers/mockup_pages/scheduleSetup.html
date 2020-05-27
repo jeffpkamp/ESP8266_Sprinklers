@@ -1,77 +1,230 @@
 <style>
-*{
-	font-size:25pt
-}
-td{
-	text-align:center;
-}
-input[type=checkbox]{
-	transform:scale(1.5);
-}
-#myFilter{
-	position: absolute;
-    background: rgb(235, 235, 235);
-    top: 18px;
-    padding: 5px;
-    left: 472px;
-    border-style: outset;
-    box-shadow: 2px 2px 10px;
-}
-.remButton{
-	background:none;
-	color:blue;
-	border:none;
-	cursor:pointer;
-}
-.comButton{
-	border-radius: 10px;
-    border: solid black 3px;
-    font-weight: bolder;
-/
-font-size: 120%;
-	margin-left:20px;
-}
-th{
-	background:rgba(240,240,240,1);
-	border-left:inset 2px;
-	border-right:inset 2px;
-	cursor:pointer;
-}
+	html {
+		font-size: 5vw;
+		font-family:Helvetica, Arial, sans-serif;
+		color: #444;
+	}
+	@media screen and (min-width: 700px) {
+		html {
+			font-size: 35px;
+		}
+	}
+	span {
+		font-size: 1rem;
+	}
+	table {
+		width: 100%;
+		border-collapse: collapse;
+	}
+	#z {
+		width: 10%
+	}
+	#d {
+		width: 20%;
+	}
+	#t {
+		width: 20%;
+	}
+	#r {
+		width: 20%;
+	}
+	#a {
+		width: 25%;
+	}
+	nav {
+		display: grid;
+		grid-template-columns: 3rem 1fr;
+	}
+	th {
+		font-size: 1rem;
+		background:rgba(240,240,240,1);
+		border-left:inset 2px;
+		border-right:inset 2px;
+		cursor:pointer;
+	}
+	th.header{
+		border-right:none;
+		border-left:none;
+		/* border-radius:10px; */
+		background: rgba(240,240,240,1);
+		text-align: left;
+		padding-left: 1rem;
+	}
+	td {
+		position: relative;
+		text-align: center;
+		font-size: .9rem;
+	}
+	input[type=checkbox]{
+		transform:scale(1.5);
+	}
+	#myFilter{
+		position: absolute;
+		background: rgb(235, 235, 235);
+		top: 18px;
+		padding: .5rem;
+		left: 472px;
+		border-style: outset;
+		box-shadow: 2px 2px 10px;
+		z-index: 1;
+		border: none;
+		border-radius: .2rem;
+		display: grid;
+		grid-template-columns: min-content 1fr;
+		grid-gap: .1rem;
+	}
+	#myFilter button {
+		grid-column: 1 / 3;
+	}
+	.actionBtn{
+		background:none;
+		border:none;
+		cursor:pointer;
+		padding: 0;
+		margin: 0;
+	}
+	button {
+		font-size: 1rem;
+		border-radius: .5rem;
+		border: solid black 1px;
+		font-weight: bolder;
+		margin: .2rem;
+	}
+	button.back {
+		border: none;
+	}
+	#quickrun{
+		position: absolute;
+		padding: 1rem;
+		left: 50%;
+		top: 25%;
+		transform: translate(-50%, -25%);
+		background: rgb(250,250,250);
+		border: solid black 2px;
+		border-radius: .3rem;
+	}
+	.pageContainer {
+		margin: auto;
+		width: 95%;
+		max-width: 800px;
+	}
+	.infoContainer {
+		display: grid;
+		grid-template-columns: max-content 1fr;
+		grid-column-gap: .5rem;
+	}
+	.buttonContainer {
+		margin: 1rem 0;
+	}
+	.tableContainer {
+		margin-top: 1rem;
+	}
+	select {
+		margin: 2px;
+		display: block;
+		font-size: .8rem;
+		color: #444;
+		line-height: 1rem;
+		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
+		margin: 0;
+		background-color: #fff;
+		border-radius: .2rem;
+		border: 1px solid #888;
+		text-align: center;
+		height: 1.2rem;
+	}
+	select::-ms-expand {
+		display: none;
+	}
+	select:hover {
+		border-color: #888;
+	}
+	select:focus {
+		border-color: #aaa;
+		box-shadow: 0 0 1px 3px rgba(59, 153, 252, .7);
+		box-shadow: 0 0 0 3px -moz-mac-focusring;
+		color: #222;
+		outline: none;
+	}
+	select option {
+		font-weight:normal;
+	}
+	.svg {
+		fill: #444;
+	}
+	input.table {
+		margin: 2px;
+		display: block;
+		width: 100%;
+		box-sizing: border-box;
+		font-size: .8rem;
+		font-family: Helvetica, Arial, sans-serif;
+		color: #444;
+		line-height: 1rem;
+		background-color: #fff;
+		border-radius: .2rem;
+		border: 1px solid #888;
+		padding: 0;
+		text-align: center;
+		height: 1.2rem
+	}
+	input.filterItem {
+		margin-right: .5rem;
+	}
 </style>
 <html>
-Click headers to sort<br>
-Right click to filter zone or day
-<div style=display:none; id=myFilter></div>
-<div>
-		<button onclick=location="index.html">Home</button>
-<div>
-		<table style=margin:auto;width:90%;border-collapse:collapse;font-size:25pt;><tbody id=setTimes>
-				<tr id=header style="border-bottom:solid black 3px">
-					<th id=z onclick=tsort(this,[z,t,d])>Zone</th><th id=d onclick=tsort(this,[d,z,t]) >Day</th><th  id=t onclick=tsort(this,[t,z,d]) >Time</th><th id=r onclick=tsort(this,[d,t,z])>Run Time</th><th>Action</th>
-				</tr>
-		</tbody></table>
-</div>
-<div style="text-align:center;margin-top:10px;" id=SPs>
-		<button style="border-radius:10px;border:solid black 3px;font-weight:bolder;font-size:120%;" onclick=setSP()>Add Time</button>
-</div>
-
-
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>My Sprinklers - Set Schedule</title>
+	</head>
+	<body>
+		<div class="pageContainer">
+			<nav>
+				<button class='back' onclick=location="index.html"><svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M0 0h24v24H0z" fill="none"/><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button>
+				<h1>My Sprinklers</h1>
+			</nav>
+			<div class="infoContainer">
+				<span>Click headers to sort</span><span></span>
+				<span>Right click to filter zone or day</span><span></span>				
+			</div>
+			<div style=display:none; id=myFilter></div>
+			<div class='tableContainer'>
+				<table style=border-collapse:collapse;><tbody id=setTimes>
+						<tr id=header style="border-bottom:solid black 3px">
+							<th id=z onclick=tsort(this,[z,t,d])>Zone</th><th id=d onclick=tsort(this,[d,z,t]) >Day</th><th  id=t onclick=tsort(this,[t,z,d]) >Time</th><th id=r onclick=tsort(this,[d,t,z])>Run Time</th><th id=a>Action</th>
+						</tr>
+				</tbody></table>
+			</div>
+			</div>
+		</div>
+	</body>
 </html>
 
 
 <script>
 zones=[0,1,2,3,4,5,6,7]
-days="Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday".split(",");
+days="Sun,Mon,Tue,Wed,Thu,Fri,Sat".split(",");
 
 schedule=[]
 //schedule format is [zone,day,hour,minute,runtime]
+const svgAttr = `xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 24 24" height=".9rem" width=".9rem" class="svg"`
+const svg = {
+	delete: `<svg ${svgAttr}><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/><path d="M0 0h24v24H0z" fill="none"/></svg>`,
+	edit: `<svg ${svgAttr}><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/><path d="M0 0h24v24H0z" fill="none"/></svg>`,
+	add: `<svg ${svgAttr}><path d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/><path d="M0 0h24v24H0z" fill="none"/></svg>`,
+	copy: `<svg ${svgAttr}><path d="M0 0h24v24H0z" fill="none"/><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm-1 4l6 6v10c0 1.1-.9 2-2 2H7.99C6.89 23 6 22.1 6 21l.01-14c0-1.1.89-2 1.99-2h7zm-1 7h5.5L14 6.5V12z"/></svg>`,
+	save: `<svg ${svgAttr}><path d="M0 0h24v24H0z" fill="none"/><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>`,
+	cancel: `<svg ${svgAttr}><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/><path d="M0 0h24v24H0z" fill="none"/></svg>`,
+}
 
 function setup(){
 	if (Object.keys(window.localStorage).indexOf("schedule") > -1){
 		schedule=JSON.parse(window.localStorage.schedule);	
 		for(x=0;x<160;x++){
 			if (schedule[x][0] > -1){
-					addSP(...schedule[x],x,setup=true);
+				setTimes.innerHTML+=renderScheduleItem(...schedule[x],x);
 			}
 		}
 	}else{
@@ -84,11 +237,7 @@ function setup(){
 setup();
 
 function IN(val,arr){
-	if (Array.from(arr).indexOf(val) > -1){
-			return true;
-	}else{
-			return false;
-	}
+	return Array.from(arr).includes(val);
 }
 
 function makeFilter(ele,event){
@@ -96,9 +245,9 @@ function makeFilter(ele,event){
 	tsort(ele);
 	var values=getCol(ele.cellIndex,1).map(ele=>ele.dataset.value).filter((v,i,a)=>a.indexOf(v)===i);
 	var labels=getCol(ele.cellIndex,1).map(ele=>ele.innerText).filter((v,i,a)=>a.indexOf(v)===i);
-	var data="Select Values<br>";
+	var data='';
 	for (x in values){
-		data+='<input class=filterItem type=checkbox checked value='+values[x]+'>'+labels[x]+'<br>';
+		data+=`<input class=filterItem type=checkbox checked value=${values[x]}><span>${labels[x]}</span>`;
 	}
 	data+='<button onclick=\'filterRows('+ele.cellIndex+',qs(".filterItem").filter(ele=>{if(ele.checked)return ele.value}).map(ele=>Number(ele.value)));myFilter.style.display="none"\'>Filter</button>'
 	myFilter.innerHTML=data;
@@ -136,67 +285,115 @@ function tsort(ele,ps=false){
 	}
 }
 
-function setSP(){
-		s="<div style=white-space:pre-line>Zone<select class=zone>";
-		for (var x=0;x<8;x++){s+="<option value="+x+">"+x+"</option>"};
-		s+="</select>\nDay<select>\
-				<option value=0>Sunday</option>\
-				<option value=1>Monday</option>\
-				<option value=2>Tuesday</option>\
-				<option value=3>Wednesday</option>\
-				<option value=4>Thursday</option>\
-				<option value=5>Friday</option>\
-				<option value=6>Saturday</option>\
-			</select>\
-			\nTime<input type=time>\
-			\nRun Time<input type=number max=360 min=0>\
-			\n<button class=comButton onclick=addSP(...Array.from(this.parentElement.children))>Save</button><button onclick=this.parentElement.remove() class=comButton>Cancel</button></div>";
-		SPs.innerHTML+=s;
-}
-
-function addSP(){
-	if (arguments[6]===true){
-		zone=arguments[0];
-		day=arguments[1];
-		hour=arguments[2];
-		minute=arguments[3];
-		time=(hour*60)+minute;
-		length=arguments[4];
-		arrSpot=arguments[5];
-		if(length==0 || time==0){
-			schedule[arguments[5]]=[-1,0,0,0,0];
-			return;
-		}
-		setTimes.innerHTML+="<tr id="+arrSpot+"><td data-value="+zone+">"+zone+"</td><td data-value="+day+">"+days[day]+"</td><td data-value="+time+">"+hour+":"+String(minute).padStart(2,"0")+"</td><td data-value="+length+">"+length+"</td><td><button class=remButton onclick=remove(this,"+arrSpot+")>Remove</button></td></tr>";
-	}else{
-		eles=arguments;
-		zone=eles[0].value;
-		day=eles[1].value;
-		time=eles[2].value.split(":");
-		hour=time[0];
-		minute=time[1];
-		time=Number(time[0]*60)+Number(time[1]);
-		length=eles[3].value;
-		if (time==NaN || length==""){
-			eles[0].parentElement.remove();
-			return;
-		}
-		var arrSpot=vacancy_check(true);
-		if (arrSpot==-1){
-			alert("Too many actions scheduled!\nDelete a schedule point to free up memory!")
-		}else{
-			schedule[arrSpot]=[Number(zone),Number(day),Number(hour),Number(minute),Number(length)];
-			setTimes.innerHTML+="<tr id="+arrSpot+"><td data-value="+zone+">"+zone+"</td><td data-value="+day+">"+days[day]+"</td><td data-value="+time+">"+hour+":"+String(minute).padStart(2,"0")+"</td><td data-value="+length+">"+length+"</td><td><button class=remButton onclick=remove(this,"+arrSpot+")>Remove</button></td></tr>";
-			eles[0].parentElement.remove();
-		}
-		window.localStorage.setItem("schedule",JSON.stringify(schedule))
+function addSchedule() {
+	console.log(arguments)
+	const eles = arguments;
+	const zone = eles[0].value;
+	const day = eles[1].value;
+	const tempTime = eles[2].value.split(":");
+	const hour = tempTime[0];
+	const minute = tempTime[1];
+	const length = eles[3].value;
+	const time = (hour*60)+minute;
+	if (time==NaN || length=="") {
+		eles[0].parentElement.remove();
+		return;
 	}
+	const index = 'number' === typeof arguments[4] ? arguments[4] : undefined;
+	const arrSpot = saveNewSchedule(zone, day, hour, minute, length, index);
+	if (arrSpot === -1) return
+	if (undefined !== index)
+	  document.querySelector(`[id='${index}']`).innerHTML=renderScheduleItem(zone, day, hour, minute, length, arrSpot);
+	else
+	  setTimes.innerHTML+=renderScheduleItem(zone, day, hour, minute, length, arrSpot);
 }
 
-function remove(ele,index){
+function renderScheduleItem(zone, day, hour, minute, length, arrSpot) {
+	const time = (hour*60)+minute;
+	if (length == 0 || time ==0 ) {
+		schedule[arrSpot]=[-1,0,0,0,0];
+		return;
+	}
+	return `
+		<tr id=${arrSpot}>
+			<td data-value=${zone}>${zone}</td>
+			<td data-value=${day}>${days[day]}</td>
+			<td data-value=${time}>${hour}:${String(minute).padStart(2,"0")}</td>
+			<td data-value=${length}>${length}</td>
+			<td>
+				<button class=actionBtn onclick=edit(this,${arrSpot})>${svg.edit}</button>
+				<button class=actionBtn onclick=copy(this,${arrSpot})>${svg.copy}</button>
+				<button class=actionBtn onclick=remove(this,${arrSpot})>${svg.delete}</button>
+			</td>
+		</tr>`;
+}
+
+function remove(ele,index) {
+	var confirm = window.confirm("Are you sure you want to delete this?");
+	if (!confirm) return;
 	ele.parentElement.parentElement.remove();
 	schedule[Number(index)]=[-1,0,0,0,0];
 	window.localStorage.setItem("schedule",JSON.stringify(schedule))
+}
+
+function copy(ele,index) {
+	const arrSpot = saveNewSchedule(...schedule[index]);
+	if (arrSpot === -1) return
+	setTimes.innerHTML+=renderScheduleItem(...schedule[index], arrSpot);
+	const newEle = document.querySelector(`[id='${arrSpot}']`).children[4].children[0];
+	edit(newEle,arrSpot);
+}
+
+function cancelEdit(ele,index) {
+	ele.parentElement.parentElement.innerHTML=renderScheduleItem(...schedule[index], index);
+}
+
+function saveEdit(ele,index) {
+		const children = Array.from(ele.parentElement.parentElement.children).map(td => td.children[0]);
+		children[4] = index;
+		return addSchedule(...children);
+	}
+
+function edit(ele,index) {
+	console.log('pizza')
+	console.log(ele)
+	const tr = ele.parentElement.parentElement;
+	const tdArray = Array.from(tr.children)
+	const item = schedule[index];
+	console.log(item)
+	
+	tr.innerHTML = `
+	<td>
+	  <select class=zone>
+		${[0,1,2,3,4,5,6,7].map(x => `<option ${item[0] === x ? 'selected' : ''} value=${x}>${x}</option>`)}
+		</select>
+	</td>
+	<td>
+	  <select>
+		  ${[0,1,2,3,4,5,6].map(x => `<option ${item[1] === x ? 'selected' : ''} value=${x}>${days[x]}</option>`)}
+		</select>
+	</td>
+	<td>
+		<input class='table' value='${String(item[2]).padStart(2,"0")}:${String(item[3]).padStart(2,"0")}' type=time>
+	</td>
+	<td>
+		<input class='table' value='${item[4]}' type=number max=360 min=0>
+	</td>
+	<td>
+		<button class=actionBtn onclick=saveEdit(this,${index}) >${svg.save}</button>
+		<button class=actionBtn onclick=cancelEdit(this,${index}) >${svg.cancel}</button>
+	</td>`;
+}
+
+function saveNewSchedule(zone, day, hour, minute, length, arrSpot) {
+	arrSpot = (arrSpot !== undefined) ? arrSpot : vacancy_check(true);
+	if (arrSpot==-1){
+		alert("Too many actions scheduled!\nDelete a schedule point to free up memory!")
+		return;
+	}
+	schedule[arrSpot]=[Number(zone),Number(day),Number(hour),Number(minute),Number(length)];
+	window.localStorage.setItem("schedule",JSON.stringify(schedule))
+	return arrSpot
 }
 
 function vacancy_check(fo=false){
@@ -213,7 +410,6 @@ function vacancy_check(fo=false){
 	return {"num":n,"pos":vac}
 }
 
-
 function qs(...args){
     var arr=[];
     for (var x=0;x<args.length;x++){
@@ -225,7 +421,6 @@ function qs(...args){
         return arr;
     }
 }
-
 
 
 qs("#z,#d").forEach(ele=>ele.oncontextmenu=function(){makeFilter(ele,event)});

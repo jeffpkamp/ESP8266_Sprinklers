@@ -15,10 +15,9 @@ char * indexPage() ;
 
 
 const byte        DNS_PORT = 53;          // Capture DNS requests on port 53
-IPAddress         apIP(10, 10, 10, 1);    // Private network for server
 DNSServer         dnsServer;              // Create the DNS object
 ESP8266WebServer  server(80);
-
+String Version="6-2-2020rev2";
 String tPassword = "";
 time_t time_update, lastLogin = 0;
 char IPADDRESS[16];
@@ -30,7 +29,7 @@ time_t passwordTimeout = 0;
 
 struct myData {
   byte schedule[160][5];
-  char pagePassword[25]={};
+  char pagePassword[25] = {};
   byte passwordTimeout;
   char ssid[25] = "Wifi_Sprinklers";
   bool hidden = false;
@@ -55,13 +54,13 @@ void EEPROM_Startup() {
 void fullReset() {
   WiFi.disconnect();
   for (int z = 0; z < 160; z++) {
-    data.schedule[z][0] = -1;
+    data.schedule[z][0] = 0;
     for (byte n = 1; n < 5; n++) {
       data.schedule[z][n] = 0;
     }
   }
-  String("Wifi_Sprinklers").toCharArray(data.ssid,25);
-  String("").toCharArray(data.pagePassword,25);
+  String("Wifi_Sprinklers").toCharArray(data.ssid, 25);
+  String("").toCharArray(data.pagePassword, 25);
   data.passwordTimeout = 0;
   data.hidden = false;
   EEPROM_Save();
@@ -138,14 +137,14 @@ void shutoff() {
   }
 }
 
-int rightNow(){
-  return (hour()*60)+minute();
+int rightNow() {
+  return (hour() * 60) + minute();
 }
 
 void runCheck() {
   if (quickRun[1] > now()) {
-    if (Status != quickRun[0]){
-      shutoff;
+    if (Status != quickRun[0]) {
+      shutoff();
     }
     Status = quickRun[0];
     digitalWrite(pins[quickRun[0]], LOW);
@@ -156,11 +155,11 @@ void runCheck() {
         int startTime = ((data.schedule[x][2] * 60) + data.schedule[x][3]);
         int endTime = (startTime + data.schedule[x][4]);
         if (rightNow() >= startTime && rightNow() < endTime) {
-          if (Status != data.schedule[x][0]){
-            shutoff; 
+          if (Status != data.schedule[x][0]) {
+            shutoff;
           }
           digitalWrite(pins[data.schedule[x][0]], LOW);
-          activeTime = ((endTime-rightNow())*60)+now();
+          activeTime = ((endTime - rightNow()) * 60) + now();
           Status = data.schedule[x][0];
           return;
         }
@@ -180,6 +179,7 @@ char * loginPage() {
 }
 
 void setup() {
+  pinMode(D8,INPUT);
   Serial.begin(115200);
   WiFiManager wifiManager;
   wifiManager.autoConnect("Wifi-Sprinkler-setup");
@@ -231,7 +231,7 @@ void setup() {
       server.send(200, "text/html", "recieved");
     }
     if (server.arg("id") == "AP") {
-      server.arg("ssid").toCharArray(data.ssid,25);
+      server.arg("ssid").toCharArray(data.ssid, 25);
       if (server.arg("hidden").toInt()) {
         data.hidden = true;
       } else {
@@ -253,14 +253,14 @@ void setup() {
       fullReset();
     }
     if (server.arg("id") == "setPassword") {
-      server.arg("value").toCharArray(data.pagePassword,25);
+      server.arg("value").toCharArray(data.pagePassword, 25);
       data.passwordTimeout = server.arg("timeout").toInt();
       server.send(200, "text/html", EEPROM_Save());
       delay(10);;
     }
-    if (server.arg("id") == "rainDelay"){
-      quickRun[1]=server.arg("hours").toInt()*3600+now();
-      quickRun[0]=8;
+    if (server.arg("id") == "rainDelay") {
+      quickRun[1] = server.arg("hours").toInt() * 3600 + now();
+      quickRun[0] = 8;
     }
     if (server.arg("id") == "quickRun") {
       quickRun[0] = server.arg("zone").toInt();
@@ -268,7 +268,7 @@ void setup() {
         quickRun[1] = 0;
         shutoff();
       } else {
-        quickRun[1] = server.arg("runTime").toInt()*60 + now();
+        quickRun[1] = server.arg("runTime").toInt() * 60 + now();
       }
       Serial.println("Right Now=" + String(now()) + ", Setting zone " + String(quickRun[0]) + " until " + String(quickRun[1]));
       server.send(200, "text/html", "QuickRun Started");
@@ -284,7 +284,11 @@ void setup() {
     }
   });
   server.on("/status.html", []() {
-    server.send(200, "text/event-stream", "retry:1000\ndata:" + String(Status) + "\n\n");
+    if (Status == 8) {
+      server.send(200, "text/event-stream", "retry:1000\ndata:Rain Delay\n\n");
+    } else {
+      server.send(200, "text/event-stream", "retry:1000\ndata:" + String(Status) + "\n\n");
+    }
   });
   server.on("/", []() {
     if (data.passwordTimeout && now() > lastLogin) {
@@ -301,7 +305,7 @@ void setup() {
       delay(100);;
     } else {
       Serial.println("got /index.html request");
-      server.send(200, "text/html", get_JSON() + indexPage() + "<div style=\"left:0px;position:fixed;bottom:0px;font-size:50%;text-align:center;background:white;right:0px;\">Local IP:" + WiFi.localIP().toString() + "</div>");
+      server.send(200, "text/html", get_JSON() + indexPage() + "<div style=\"left:0px;position:fixed;bottom:0px;font-size:50%;text-align:center;background:white;right:0px;\">Local IP:" + WiFi.localIP().toString() + " "+Version+"</div>");
     }
   });
   server.on("/scheduleSetup.html", [] () {
@@ -338,6 +342,17 @@ void setup() {
 
 
 void loop() {
+  if (digitalRead(D8)==HIGH){
+    Serial.println("Checking for hard reset, waiting 5 seconds");
+    for(byte x=0;x<5;x++){
+      delay(1000);
+      Serial.println(digitalRead(D8));
+    }
+    if (digitalRead(D8)==HIGH){
+      Serial.println("Still low, resetting");
+      fullReset();
+    }
+  }
   if (now() > time_update) {
     update_time();
   }

@@ -62,7 +62,7 @@ input,select{
 			</tr><tr>
 					<td>Password Timeout(minutes)</td><td><input placeholder="Password Timeout" type=number id=timeout value=0></td>
 			</tr><tr>
-					<td colspan=2><button onclick=transmit("SetPassword",[pw1.value,pw2.value,timeout.value]>Save</button><button onclick=pwdiv.style.display="none">Cancel</button></td>
+					<td colspan=2><button onclick=transmit("SetPassword",[pw1.value,pw2.value,timeout.value]);pwdiv.style.display="none";>Save</button><button onclick=pwdiv.style.display="none">Cancel</button></td>
 	</table>
 </div>
 <div style=display:none id=message>
@@ -75,7 +75,7 @@ input,select{
 		Hide Access Point? <select id=APVisibility><option selected value=0>Visible</option><option value=1>Hidden</option></select><br>
 		SSID<input placeholder="Wifi SSID" id=ssid><br><button onclick=transmit("AP",[ssid.value,APVisibility.value])>Save</button><br><br><br>
 		<b>Firmware Update</b><br>
-		Source<input type=text value=jeffshomesite.com><br><button>Update</button><br>
+		Source<input type=text id=source value=jeffshomesite.com><br><button transmit("Update",[source.value]);>Update</button><br>
 <br><br>
 <b>Reboot Device</b><br>
 <button onclick=transmit("reboot")>Reboot</button>
@@ -115,7 +115,10 @@ function transmit(command,values){
 		packet="id=setPassword&value="+values[0]+"&timeout="+values[2];
 	}
 	if (command=="Update"){
-		packet="id=update&value="+values[0];
+		packet="id=Update&value="+values[0];
+	}
+	else{
+		packet="id="+command;
 	}
 	var request = new XMLHttpRequest();	
 	request.open("POST", "saveData.html", true);

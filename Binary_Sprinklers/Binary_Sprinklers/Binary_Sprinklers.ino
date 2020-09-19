@@ -12,12 +12,14 @@
 char * settingsPage();
 char * schedulePage();
 char * indexPage() ;
+char * styleSheet();
+char * header();
 
 
 const byte        DNS_PORT = 53;          // Capture DNS requests on port 53
 DNSServer         dnsServer;              // Create the DNS object
 ESP8266WebServer  server(80);
-String Version="6-7-2020rev1";
+String Version = " Complied:"+String(__DATE__);
 String tPassword = "";
 time_t time_update, lastLogin = 0;
 char IPADDRESS[16];
@@ -27,12 +29,20 @@ time_t activeTime = 0;
 byte Status = 255;
 time_t passwordTimeout = 0;
 
+struct schedulePoint {
+  byte days;
+  byte zone;
+  byte runTime;
+  int16_t start;
+};
+
 struct myData {
-  byte schedule[160][5];
-  char pagePassword[25] = {};
+  schedulePoint schedule[64];
+  char pagePassword[25] = "";
   byte passwordTimeout;
   char ssid[25] = "Wifi_Sprinklers";
   bool hidden = false;
+  char zoneNames[8][25] = {"zone1", "zone2", "zone3", "zone4", "zone5", "zone6", "zone7", "zone8"};
 } data;
 
 void EEPROM_Startup() {
@@ -53,14 +63,17 @@ void EEPROM_Startup() {
 
 void fullReset() {
   WiFi.disconnect();
-  for (int z = 0; z < 160; z++) {
-    data.schedule[z][0] = 0;
-    for (byte n = 1; n < 5; n++) {
-      data.schedule[z][n] = 0;
-    }
+  for (byte z = 0; z < 64; z++) {
+    data.schedule[z].days = 0;
+    data.schedule[z].zone = 0;
+    data.schedule[z].runTime = 0;
+    data.schedule[z].start = 0;
   }
   String("Wifi_Sprinklers").toCharArray(data.ssid, 25);
   String("").toCharArray(data.pagePassword, 25);
+  for (byte z = 0; z < 8; z++) {
+    ("Zone" + String(z)).toCharArray(data.zoneNames[z], 25);
+  }
   data.passwordTimeout = 0;
   data.hidden = false;
   EEPROM_Save();
@@ -71,21 +84,21 @@ void fullReset() {
 
 String get_JSON() {
   String s = "<script> schedule=[";
-  for (byte z = 0; z < 160; z++) {
+  for (byte z = 0; z < 64; z++) {
     if (z == 0) s += "[";
     else s += ",[";
-    for (byte n = 0; n < 5; n++) {
-      if (n == 0) {
-        s += String(data.schedule[z][n]);
-      } else {
-        s += "," + String(data.schedule[z][n]);
-      }
-    }
+    s += String(data.schedule[z].days) + "," + String(data.schedule[z].zone) + "," + String(data.schedule[z].start) + "," + String(data.schedule[z].runTime);
     s += "]";
   }
-  s += "]</script>";
+  s += "]; zones=[\"" + String(data.zoneNames[0]);
+  for (byte z = 1; z < 8; z++) {
+    s += "\",\"" + String(data.zoneNames[z]);
+  }
+  s += "\"];SSID=\"" + String(data.ssid) + "\";</script>";
   return s;
 }
+
+
 
 String EEPROM_Save() {
   Serial.println("EEPROM Sector usage:" + String(EEPROM.percentUsed()) + "%");
@@ -96,21 +109,24 @@ String EEPROM_Save() {
 }
 
 
-void software_update(String(ip_address)) {
+String software_update(String ip_address) {
   Serial.println("\nStarting update");
   Serial.println(String(ip_address));
-  t_httpUpdate_return ret = ESPhttpUpdate.update(ip_address, 80, "/Consumer_sprinkler2_0.bin");
+  t_httpUpdate_return ret = ESPhttpUpdate.update(ip_address.c_str(), 80, "/Consumer_sprinkler2_0.bin");
   Serial.println("UPDATE VALUE");
   Serial.println(ret);
   switch (ret) {
     case HTTP_UPDATE_FAILED:
       Serial.printf("HTTP_UPDATE_FAILD Error (%d): %s", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
+      return "HTTP_UPDATE_FAILD Error" +String(ESPhttpUpdate.getLastError())+":"+String(ESPhttpUpdate.getLastErrorString());
       break;
     case HTTP_UPDATE_NO_UPDATES:
       Serial.println("HTTP_UPDATE_NO_UPDATES");
+      return "HTTP_UPDATE_NO_UPDATES";
       break;
     case HTTP_UPDATE_OK:
       Serial.println("HTTP_UPDATE_OK");
+      return "HTTP_UPDATE_OK";
       break;
   }
 }
@@ -141,6 +157,18 @@ int rightNow() {
   return (hour() * 60) + minute();
 }
 
+
+bool dayCheck(uint8_t n, uint8_t d) {
+  bool days[7];
+  for (int8_t i = 6; i > -1 ; --i)
+  {
+    days[i] = n & 1;
+    n /= 2;
+  }
+  return days[d];
+}
+
+
 void runCheck() {
   if (quickRun[1] > now()) {
     if (Status != quickRun[0]) {
@@ -150,18 +178,20 @@ void runCheck() {
     digitalWrite(pins[quickRun[0]], LOW);
     activeTime = quickRun[1];
   } else {
-    for (byte x = 0; x < 160; x++) {
-      if (data.schedule[x][1] == weekday() - 1) {
-        int startTime = ((data.schedule[x][2] * 60) + data.schedule[x][3]);
-        int endTime = (startTime + data.schedule[x][4]);
-        if (rightNow() >= startTime && rightNow() < endTime) {
-          if (Status != data.schedule[x][0]) {
-            shutoff;
+    for (byte x = 0; x < 64; x++) {
+      if (data.schedule[x].runTime) {
+        if (dayCheck(data.schedule[x].days, weekday() - 1)) {
+          int startTime = data.schedule[x].start;
+          int endTime = (startTime + data.schedule[x].runTime);
+          if (rightNow() >= startTime && rightNow() < endTime) {
+            if (Status != data.schedule[x].zone) {
+              shutoff();
+            }
+            digitalWrite(pins[data.schedule[x].zone], LOW);
+            activeTime = ((endTime - rightNow()) * 60) + now();
+            Status = data.schedule[x].zone;
+            return;
           }
-          digitalWrite(pins[data.schedule[x][0]], LOW);
-          activeTime = ((endTime - rightNow()) * 60) + now();
-          Status = data.schedule[x][0];
-          return;
         }
       }
     }
@@ -179,8 +209,9 @@ char * loginPage() {
 }
 
 void setup() {
-  pinMode(D8,INPUT);
+  pinMode(D8, INPUT);
   Serial.begin(115200);
+  Serial.println();
   WiFiManager wifiManager;
   wifiManager.autoConnect("Wifi-Sprinkler-setup");
   Serial.println("connected!");
@@ -206,6 +237,9 @@ void setup() {
   WiFi.softAPConfig(apIP, apIP, netMsk);
   //////////////WEBServer/////////////////
 
+  server.on("/stylesheet.css", [] () {
+    server.send(200, "text/css", styleSheet());
+  });
   server.on("/saveData.html", [] () {
     Serial.println("requested saveData.html");
     Serial.println("Request Arguments");
@@ -219,15 +253,13 @@ void setup() {
     if (server.arg("id") == "schedule") {
       byte pos = server.arg("pos").toInt();
       byte z = server.arg("zone").toInt();
-      byte d = server.arg("day").toInt();
-      byte h = server.arg("hour").toInt();
-      byte m = server.arg("minute").toInt();
+      byte d = server.arg("days").toInt();
+      int16_t s = server.arg("start").toInt();
       byte r = server.arg("runtime").toInt();
-      data.schedule[pos][0] = z;
-      data.schedule[pos][1] = d;
-      data.schedule[pos][2] = h;
-      data.schedule[pos][3] = m;
-      data.schedule[pos][4] = r;
+      data.schedule[pos].zone = z;
+      data.schedule[pos].days = d;
+      data.schedule[pos].start = s;
+      data.schedule[pos].runTime = r;
       server.send(200, "text/html", "recieved");
     }
     if (server.arg("id") == "AP") {
@@ -244,9 +276,20 @@ void setup() {
       server.send(200, "text/html", EEPROM_Save());
       Serial.println(get_JSON());
     }
+    if (server.arg("id") == "zoneNames") {
+      server.arg("zone1").toCharArray(data.zoneNames[0], 25);
+      server.arg("zone2").toCharArray(data.zoneNames[1], 25);
+      server.arg("zone3").toCharArray(data.zoneNames[2], 25);
+      server.arg("zone4").toCharArray(data.zoneNames[3], 25);
+      server.arg("zone5").toCharArray(data.zoneNames[4], 25);
+      server.arg("zone6").toCharArray(data.zoneNames[5], 25);
+      server.arg("zone7").toCharArray(data.zoneNames[6], 25);
+      server.arg("zone8").toCharArray(data.zoneNames[7], 25);
+      server.send(200, "text/html", EEPROM_Save());
+    }
     if (server.arg("id") == "Update") {
-      server.send(200, "text/html", "Device is updating...");
-      software_update(server.arg("value"));
+      //server.send(200, "text/html", "Device is updating...");
+      server.send(200,"text/html", software_update(String(server.arg("source"))));
     }
     if (server.arg("id") == "reset") {
       server.send(200, "text/html", "Wiping memory, device will reset now");
@@ -277,18 +320,14 @@ void setup() {
     if (server.arg("id") == "login") {
       if (server.arg("pw") == data.pagePassword) {
         lastLogin = now() + (data.passwordTimeout * 60);
-        server.send(200, "text/html",  get_JSON() + indexPage() + "<div style=\"left:0px;position:fixed;bottom:0px;font-size:50%;text-align:center;background:white;right:0px;\">Local IP:" + WiFi.localIP().toString() + "</div>");
+        server.send(200, "text/html",  "<script>location=\"/index.html\"</script>");
       } else {
         server.send(200, "text/html", loginPage());
       }
     }
   });
   server.on("/status.html", []() {
-    if (Status == 8) {
-      server.send(200, "text/event-stream", "retry:1000\ndata:Rain Delay\n\n");
-    } else {
-      server.send(200, "text/event-stream", "retry:1000\ndata:" + String(Status) + "\n\n");
-    }
+    server.send(200, "text/event-stream", "retry:1000\ndata:{\"Status\":" + String(Status) + ",\"activeTime\":"+String(activeTime)+"}\n\n");
   });
   server.on("/", []() {
     if (data.passwordTimeout && now() > lastLogin) {
@@ -296,7 +335,7 @@ void setup() {
       delay(100);;
     } else {
       Serial.println("got / request");
-      server.send(200, "text/html", get_JSON() + indexPage() + "<div style=\"left:0px;position:fixed;bottom:0px;font-size:50%;text-align:center;background:white;right:0px;\">Local IP:" + WiFi.localIP().toString() + "</div>");
+      server.send(200, "text/html", get_JSON() + header() + indexPage() + "<div style=\"left:0px;position:fixed;bottom:0px;font-size:50%;text-align:center;background:white;right:0px;\">Local IP:" + WiFi.localIP().toString() + "</div>");
     }
   });
   server.on("/index.html", []() {
@@ -305,7 +344,7 @@ void setup() {
       delay(100);;
     } else {
       Serial.println("got /index.html request");
-      server.send(200, "text/html", get_JSON() + indexPage() + "<div style=\"left:0px;position:fixed;bottom:0px;font-size:50%;text-align:center;background:white;right:0px;\">Local IP:" + WiFi.localIP().toString() + " "+Version+"</div>");
+      server.send(200, "text/html", get_JSON() + header() + indexPage() + "<div style=\"left:0px;position:fixed;bottom:0px;font-size:50%;text-align:center;background:white;right:0px;\">Local IP:" + WiFi.localIP().toString() + " " + Version + "</div>");
     }
   });
   server.on("/scheduleSetup.html", [] () {
@@ -313,8 +352,7 @@ void setup() {
       server.send(200, "text/html", loginPage());
     } else {
       Serial.println("requested scheduleSetup.html");
-      //server.send(200, "text/html", get_JSON());
-      server.send(200, "text/html", get_JSON() + schedulePage());
+      server.send(200, "text/html", get_JSON() + header() + schedulePage());
     }
   });
   server.onNotFound([]() {
@@ -322,7 +360,7 @@ void setup() {
       server.send(200, "text/html", loginPage());
     } else {
       Serial.println("requested something unknown");
-      server.send(200, "text/html", get_JSON() + indexPage() + "<div style=\"left:0px;position:fixed;bottom:0px;font-size:50%;text-align:center;background:white;right:0px;\">Local IP:" + WiFi.localIP().toString() + "</div>");
+      server.send(200, "text/html", get_JSON() + header() + indexPage() + "<div style=\"left:0px;position:fixed;bottom:0px;font-size:50%;text-align:center;background:white;right:0px;\">Local IP:" + WiFi.localIP().toString() + "</div>");
     }
   });
   server.on("/settings.html", []() {
@@ -330,11 +368,11 @@ void setup() {
       server.send(200, "text/html", loginPage());
     } else {
       Serial.println("requested settings.html");
-      server.send(200, "text/html", "<script>SSID=\"" + String(data.ssid) + "\"</script>" + settingsPage());
+      server.send(200, "text/html", get_JSON() + header() + settingsPage());
     }
   });
   server.on("/favicon.ico", []() {
-    server.send(200, "image/svg+xml", "Go Away");
+    server.send(200, "text/html", "");
   });
   server.begin();
   dnsServer.start(DNS_PORT, "*", apIP);
@@ -343,17 +381,17 @@ void setup() {
 
 
 void loop() {
-  if (digitalRead(D8)==HIGH){
+  if (digitalRead(D8) == HIGH) {
     Serial.println("Checking for hard reset, waiting 5 seconds");
-    for(byte x=0;x<5;x++){
+    for (byte x = 0; x < 5; x++) {
       delay(1000);
       Serial.println(digitalRead(D8));
     }
-    if (digitalRead(D8)==HIGH){
+    if (digitalRead(D8) == HIGH) {
       fullReset();
     }
   }
-  if (now() > time_update) {
+  if (now() > time_update || year() < 2020) {
     update_time();
   }
   yield();
@@ -367,6 +405,11 @@ void loop() {
     }
     if (input == 't') {
       Serial.println(String(month()) + " " + String(day()) + " " + String(hour()) + " " + String(minute()) + " " + String(second()) + " " + String(weekday()));
+    }
+    if (input == 'd') {
+      byte d = Serial.parseInt();
+      byte t = Serial.parseInt();
+      Serial.println("Daycheck " + String(d) + " " + String(t) + " " + String(dayCheck(d, t)));
     }
   }
 }

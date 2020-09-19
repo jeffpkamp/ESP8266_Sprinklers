@@ -1,0 +1,215 @@
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" type="text/css" href="stylesheet.css">
+<html>
+<div id=quickrun class=popout style=display:none;text-align:center;>
+        <h1>Quick Run</h1>
+        Zone: <select id=qrZone></select>
+        <br>
+        Runtime: <input type=number id=qrTime min=0 max=120 style=width:4p></input>
+        <br>
+        <button onclick=qr(qrZone.value,qrTime.value);quickrun.style.display="none"; >Set</button>
+        <button onclick=quickrun.style.display="none">Cancel</button>
+        <br>
+        <button onclick=qr(0,0);quickrun.style.display="none"; >Stop</button>
+    </div>
+<div id=raindelay class=popout style=display:none;text-align:center;>
+	<h1>Rain Delay</h1>
+	Hours:<input type=number id=delay>
+	<br>
+	<button onclick=qr(8,delay.value*60),this.parentElement.style.display="none">Set</button>
+	<button onclick=this.parentElement.style.display="none">Cancel</button>
+</div>
+<div id="info" style="text-align:center">
+		<table style="margin:auto">
+				<tr>
+						<td>Current Time:</td> <td id="time"></td> 
+				</tr> <tr>
+						<td>Active Zones:</td> <td id="activeZone"></td> 
+				</tr> <tr>
+						<td></td> <td></td> </tr> <tr> <td colspan="2"> <button onclick="quickrun.style.display=&quot;&quot;">QuickRun</button><button onclick="raindelay.style.display=&quot;&quot;">Rain Delay</button> </td> 
+				</tr> 
+		</table> 
+</div>
+<div id=tableZone></div>
+</html>
+<script>
+wdays=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+function update() {
+    clock = new Date();
+    var now = (clock.getHours() * 60) + (clock.getMinutes());
+    time.innerText = clock.toLocaleTimeString();
+    setTimeout(update, 1000);
+}
+
+clock = new Date();
+update();
+
+
+
+tableZone.innerHTML=tableMaker();
+
+quickRun = [0, 0];
+
+
+var zoneStatus = new EventSource("status.html");
+
+zoneStatus.addEventListener('message', function(e) {
+	var data=JSON.parse(e.data);
+	if (data["Status"] == 255) {
+		activeZone.innerText = "None";
+	} else {
+		var endTime=new Date(data["activeTime"]*1000);
+		activeZone.innerText = zones[data["Status"]]+" is Active Until "+endTime.getUTCHours()%12+":"+String(endTime.getUTCMinutes()).padStart(2,"0");
+	}
+});
+
+function qs(s){
+	return Array.from(...Array(document.querySelectorAll(s)));
+}
+
+
+
+
+function getTime(h,m){
+	if (m){
+		return hour*60+m;
+	}else{
+		var ampm="";
+		var hour=parseInt(h/60,10);
+		var minutes=h%60;
+		if (hour > 11) {
+			ampm="PM";
+		}else{
+			ampm="AM";
+		}
+		if (hour%12==0){
+			hour=12;
+		}else{
+			hour=hour%12;
+		}
+		return [hour,minutes,ampm];
+	}
+}
+
+function updateDays(ele,pos){
+	val=parseInt(qs("."+ele.className).map(function(ele){if(ele.checked)return 1;else return 0}).join(""),2);
+	schedule[pos][0]=val;
+}
+
+function dayInput(days,pos){
+		days=String(days);
+		console.log(days);
+		var v="<table><tr>";
+	for (var x=0;x<7;x++){
+		v+='<td><input onchange=updateDays(this,'+pos+') class=p'+pos+' type=checkbox ';
+		if (days[x]=="1"){
+			v+=" checked";
+		}
+		v+=" ></td><td>"+wdays[x]+"</td></tr>";
+	}
+	v+="</table>";
+	return v;
+}
+
+function zoneInput(val,pos){
+	var t="<select data-value="+pos+" onchange=update(this)>";
+	for (var x=0;x<zones.length;x++){
+		t+="<option value="+x+" ";
+		if (val == x){
+			t+="selected";
+		}
+		t+=">"+zones[x]+"</input>";
+	}
+	t+="</select>";
+	return t;
+}
+
+function remove(x){
+	schedule[x]=[0,0,0,0];
+	setup();
+}
+
+function addTime(){
+	for (x in schedule){
+		if (schedule[x][0]==0){
+			schedule[x][0]=127;
+			setup();
+			return;
+		}
+	}
+	alert("All slots are occupied! Delete a schedule point to make space!");
+}
+
+
+
+function mysort(ele){
+	var col=ele.cellIndex;
+	var vals=[];
+	var n=0;
+	for (x in schedule){
+		if (schedule[x][0] && schedule[x][3]){
+			vals[n]=[schedule[x][col],n];
+			n++;
+		}
+	}
+	return vals;
+}
+
+function hideRows(cl,visibility){
+	if (visibility == "false"){
+		qs("."+cl).map(ele=>ele.style.display="");
+		qs("#"+cl)[0].dataset.vis="true";
+	}else{
+		qs("."+cl).map(ele=>ele.style.display="none");
+		qs("#"+cl)[0].dataset.vis="false";
+	}
+}
+
+function tableMaker(){
+	var qrz="";
+	for (var x in zones){
+		qrz+="<option value="+x+">"+zones[x]+"</option>";
+	}
+	qrZone.innerHTML=qrz;
+	tabledays=[[],[],[],[],[],[],[]];
+	var page="<table class=datatable><tr><th class=title>Zone</th><th class=title>Start</th><th class=title>Run Time</th></tr>";
+	for (x in schedule){
+		if (schedule[x][3]){
+			days=schedule[x][0].toString(2).padStart(7,"0");
+			for (day in days){
+				if (Number(days[day])){
+					tabledays[day].push([schedule[x][1],schedule[x][2],schedule[x][3]]);
+				}
+			}
+		}
+	}
+	for (day in tabledays){
+		tabledays[day].sort(function(a,b){return a[1]-b[1]});
+		page+='<tr><th class=header colspan=3 onclick=hideRows(this.id,this.dataset.vis) data-vis="false" id='+wdays[day]+'>'+wdays[day]+'</th></tr>';
+		for (spot in tabledays[day]){
+			var startTime=getTime(tabledays[day][spot][1]);
+			page+='<tr class='+wdays[day]+' style=display:none; ><td>'+zones[tabledays[day][spot][0]]+'</td><td>'+String(startTime[0]).padStart(2,"0")+':'+String(startTime[1]).padStart(2,"0")+' '+startTime[2]+'</td><td>'+tabledays[day][spot][2]+'</td></tr>';
+		}
+	}
+	return page+="</table>";
+}
+
+function qr(zone, time) {
+	var now = Number((clock.getHours() * 60) + clock.getMinutes());
+	quickRun = [zone, time];
+	qs(".popup").forEach(ele=>ele.style.display = "none");
+	var packet = "id=quickRun&zone=" + zone + "&runTime=" + time;
+	var request = new XMLHttpRequest();
+	request.open("POST", "saveData.html", true);
+	request.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+	request.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+			console.log(this.responseText);
+		}
+	}
+	;
+	request.send(packet);
+}
+
+</script>

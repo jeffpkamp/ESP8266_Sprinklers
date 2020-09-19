@@ -1,0 +1,112 @@
+<style>
+	@media screen and (min-width: 700px){
+		html{
+			font-size:35px;
+		}
+	}
+	html{
+		font-size:3vw;
+	}
+	*{
+		font-size:1rem;
+		font-family:sans-serif;
+	}
+	@media screen and (min-width:700px){
+		html{
+			font-size:20px;
+		}
+	}
+	form{
+		text-align:center;
+	}
+	button,input[type=submit]{
+		margin:5px;
+		border-radius:10px;
+		border: solid black 3px;
+		font-weight:bold;
+	}
+	.popout{
+		position:fixed;
+		top:10vh;
+		left:10vw;
+		right:10vw;
+		background:white;
+		text-align:center;
+		border:solid black 5px;
+		border-radius:10px;
+		box-shadow: 5px 5px 25px;
+		padding:10px;
+	}
+	.sortable{
+		cursor:pointer;
+	}
+	table{
+		margin:auto;
+		border-collapse:collapse;
+	}
+	.header{
+		background:rgb(240,240,240);
+		border-bottom:solid 1px lightgray;
+		text-align:left;
+		cursor:pointer;
+		transition:.5s;
+	}
+	.header:hover{
+		transition:.5s;
+		padding-left:1rem;
+}
+	.datatable{
+		border-collapse:collapse;
+		width:90%;
+	}
+	input,svg,select{
+		cursor:pointer;
+		text-align:center;
+		text-align-last:center;
+		margin-bottom:5px;
+	}
+	.datatable td{
+		text-align:center;
+		width:33%;
+		padding-left:1rem;
+		padding-right:1rem;
+		text-align:center;
+		border-bottom:solid 1px rgb(140,140,140);
+	}
+	input:hover{
+		background-color:rgb(240,240,240);
+		  }
+	#stable select{
+			border:none;
+			text-align:center;
+	}
+	select:hover{
+			background-color:rgb(240,240,240);
+		   }
+	.datatable input{
+		text-align:center;
+		border:none;
+	}
+	.datatable select{
+		border:none;
+	}
+	input[type=number]{
+		width:3rem;
+	}
+	.title{
+		background:rgb(240,240,240);
+		border-right:solid 1px black;
+		border-left:solid 1px black;
+		width:33%;
+		border-top:2px solid black;
+		border-bottom:2px solid black;
+	}
+	.divhead{
+		margin-bottom:.25rem;
+		margin-top:1.5rem;
+		font-weight:bold;
+		text-decoration:underline;
+		text-align:center;
+		width:100%;
+	}
+</style>

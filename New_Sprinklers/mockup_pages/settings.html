@@ -75,7 +75,7 @@ input,select{
 		Hide Access Point? <select id=APVisibility><option selected value=0>Visible</option><option value=1>Hidden</option></select><br>
 		SSID<input placeholder="Wifi SSID" id=ssid><br><button onclick=transmit("AP",[ssid.value,APVisibility.value])>Save</button><br><br><br>
 		<b>Firmware Update</b><br>
-		Source<input type=text id=source value=jeffshomesite.com><br><button transmit("Update",[source.value]);>Update</button><br>
+		Source<input type=text id=source value=jeffshomesite.com><br><button onclick=transmit("Update",[source.value]);>Update</button><br>
 <br><br>
 <b>Reboot Device</b><br>
 <button onclick=transmit("reboot")>Reboot</button>
@@ -98,12 +98,12 @@ function transmit(command,values){
 			if (!values[0]){values[0]=SSID;}
 			packet="id=AP&ssid="+values[0]+"&hidden="+values[1];
 	}
-	if (command=="Reset"){
+	else if (command=="Reset"){
 		if (confirm("This will erase all data and completely reset the sprinkler controller!\nProceed?")){
 			packet="id=reset";
 		}
 	}
-	if (command=="SetPassword"){
+	else if (command=="SetPassword"){
 		if (values[0]!=values[1]){
 			alert("Passwords Must Match!");
 			return;
@@ -114,7 +114,7 @@ function transmit(command,values){
 		}
 		packet="id=setPassword&value="+values[0]+"&timeout="+values[2];
 	}
-	if (command=="Update"){
+	else if (command=="Update"){
 		packet="id=Update&value="+values[0];
 	}
 	else{
@@ -128,6 +128,7 @@ function transmit(command,values){
 			alert(this.responseText);
 		}
 	};
+	console.log(packet);
 	request.send(packet);
 }
 
